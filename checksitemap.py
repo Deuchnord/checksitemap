@@ -2,6 +2,8 @@
 
 from argparse import ArgumentParser
 from urllib.parse import urlparse
+from bs4 import BeautifulSoup
+
 import requests
 import xml.etree.ElementTree as ET
 
@@ -70,11 +72,27 @@ def is_url_correct(url, n_url) -> bool:
                 print('Location "%s" returned %d status code' % (loc, r.status_code))
                 valid = False
 
+            valid = valid and is_indexable(loc, r)
+
     if not has_loc:
         print('Error: URL n°%d has no mandatory <loc> tag!' % n_url)
         return False
 
     return valid
+
+
+def is_indexable(loc: str, response: requests.Response) -> bool:
+    if "noindex" in response.headers.get("X-Robots-Tag", "").split(" "):
+        print('Location "%s" is not indexable based on X-Robots-Tag HTTP header' % loc)
+        return False
+
+    html = BeautifulSoup(response.text, 'html.parser')
+    for meta in html.head.find_all("meta"):
+        if meta.get("name") == "robots" and "noindex" in meta.get("content", "").split(","):
+            print('Location "%s" is not indexable based on <meta name="robots" /> HTML tag' % loc)
+            return False
+
+    return True
 
 
 if __name__ == "__main__":
