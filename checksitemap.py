@@ -59,12 +59,14 @@ def is_url_correct(url, n_url) -> bool:
     has_loc = False
 
     for prop in url:
-        if prop.tag.replace(XML_ETREE_NAMESPACE, '') not in ['loc', 'lastmod', 'changefreq', 'priority']:
-            print('Error: invalid <%s> tag for URL n°%d!' % (prop.tag.replace(XML_ETREE_NAMESPACE, ''), n_url))
+        tag_name = prop.tag.replace(XML_ETREE_NAMESPACE, '')
+
+        if tag_name not in ['loc', 'lastmod', 'changefreq', 'priority']:
+            print('Error: invalid <%s> tag for URL n°%d!' % (tag_name, n_url))
 
             return False
 
-        if prop.tag.replace(XML_ETREE_NAMESPACE, '') == 'loc':
+        if tag_name == 'loc':
             has_loc = True
             loc = prop.text
             r = requests.get(loc)
@@ -73,6 +75,17 @@ def is_url_correct(url, n_url) -> bool:
                 valid = False
 
             valid = valid and is_indexable(loc, r)
+
+        if tag_name == 'priority':
+            try:
+                priority = float(prop.text)
+
+                if not 0 <= priority <= 1:
+                    raise ValueError()
+
+            except ValueError:
+                print('Invalid value "%s" for <%s> tag, must be a number between 0 and 1' % (prop.text, tag_name))
+                valid = False
 
     if not has_loc:
         print('Error: URL n°%d has no mandatory <loc> tag!' % n_url)
