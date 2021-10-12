@@ -1,8 +1,8 @@
 from pathlib import Path
 from distutils.core import setup
 
-HERE = Path(__file__).parent
-README = (HERE / "README.md").read_text()
+with open('README.md', 'r') as f:
+    README = f.read()
 
 setup(
     name='checksitemap',
