@@ -9,6 +9,7 @@ import xml.etree.ElementTree as ET
 
 XML_NAMESPACE = 'http://www.sitemaps.org/schemas/sitemap/0.9'
 XML_ETREE_NAMESPACE = '{%s}' % XML_NAMESPACE
+VALID_CHANGE_FREQS = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never']
 
 
 def main(url: str) -> int:
@@ -86,6 +87,12 @@ def is_url_correct(url, n_url) -> bool:
             except ValueError:
                 print('Invalid value "%s" for <%s> tag, must be a number between 0 and 1' % (prop.text, tag_name))
                 valid = False
+
+        if tag_name == 'changefreq' and prop.text not in VALID_CHANGE_FREQS:
+            print('Invalid vale for <%s> tag, must be one of the following values: %s' % (
+                tag_name,
+                ', '.join(VALID_CHANGE_FREQS)
+            ))
 
     if not has_loc:
         print('Error: URL n°%d has no mandatory <loc> tag!' % n_url)
