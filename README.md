@@ -14,7 +14,7 @@ pip install checksitemap
 You can now use tool, by invoking the command:
 
 ```bash
-python checksitemap "https://example.com/sitemap.xml"
+checksitemap "https://example.com/sitemap.xml"
 ```
 
 It will then check all the URLs in your sitemap and show errors if:
