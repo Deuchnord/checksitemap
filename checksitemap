@@ -107,7 +107,14 @@ def is_indexable(loc: str, response: requests.Response) -> bool:
         return False
 
     html = BeautifulSoup(response.text, 'html.parser')
-    for meta in html.head.find_all("meta"):
+    head = html.head
+
+    if head is None:
+        # this may happen sometimes, e.g. some redirection pages.
+        # even though this is quite ugly, it remains valid HTML
+        return True
+
+    for meta in head.find_all("meta"):
         if meta.get("name") == "robots" and "noindex" in meta.get("content", "").split(","):
             print('Location "%s" is not indexable based on <meta name="robots" /> HTML tag' % loc)
             return False
