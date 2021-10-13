@@ -6,7 +6,7 @@ with open('README.md', 'r') as f:
 
 setup(
     name='checksitemap',
-    version='v1.0.0',
+    version='v1.0.1',
     packages=[''],
     scripts=['checksitemap'],
     url='https://github.com/Deuchnord/checksitemap',
