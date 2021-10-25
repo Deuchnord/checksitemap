@@ -8,9 +8,17 @@ from bs4 import BeautifulSoup
 import requests
 import xml.etree.ElementTree as ET
 
-XML_NAMESPACE = 'http://www.sitemaps.org/schemas/sitemap/0.9'
-XML_ETREE_NAMESPACE = '{%s}' % XML_NAMESPACE
-VALID_CHANGE_FREQS = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never']
+XML_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"
+XML_ETREE_NAMESPACE = "{%s}" % XML_NAMESPACE
+VALID_CHANGE_FREQS = [
+    "always",
+    "hourly",
+    "daily",
+    "weekly",
+    "monthly",
+    "yearly",
+    "never",
+]
 
 
 def main(url: str) -> int:
@@ -20,12 +28,12 @@ def main(url: str) -> int:
         print("The given URL was unreachable. Please double-check it.")
         return 1
 
-    if xml.headers['content-type'].split(';')[0] != 'text/xml':
+    if xml.headers["content-type"].split(";")[0] != "text/xml":
         parsed = urlparse(url)
-        url = '%s://%s/sitemap.xml' % (parsed.scheme, parsed.netloc)
+        url = "%s://%s/sitemap.xml" % (parsed.scheme, parsed.netloc)
         xml = requests.get(url)
         if xml.status_code == 200:
-            print('Sitemap found at %s' % url)
+            print("Sitemap found at %s" % url)
 
     xml.raise_for_status()
     sitemap = ET.fromstring(xml.text)
@@ -35,7 +43,10 @@ def main(url: str) -> int:
     if n_passed != n_urls:
         print()
 
-    print('%d of %d URLs (%d%%) passed.' % (n_passed, n_urls, int(n_passed / n_urls * 100)))
+    print(
+        "%d of %d URLs (%d%%) passed."
+        % (n_passed, n_urls, int(n_passed / n_urls * 100))
+    )
 
     return 0 if n_passed == n_urls else 1
 
@@ -45,13 +56,19 @@ def check_sitemap(sitemap) -> (int, int):
     n_passed = 0
 
     if not sitemap.tag.startswith(XML_ETREE_NAMESPACE):
-        print('Warning: missing XML namespace on <urlset> tag: please add xmlns="%s"' % XML_NAMESPACE)
+        print(
+            'Warning: missing XML namespace on <urlset> tag: please add xmlns="%s"'
+            % XML_NAMESPACE
+        )
 
     for item in sitemap:
         n_urls += 1
 
-        if item.tag.replace(XML_ETREE_NAMESPACE, '') != 'url':
-            print('Error: invalid tag <%s>, expected <url>' % item.tag.replace(XML_ETREE_NAMESPACE, ''))
+        if item.tag.replace(XML_ETREE_NAMESPACE, "") != "url":
+            print(
+                "Error: invalid tag <%s>, expected <url>"
+                % item.tag.replace(XML_ETREE_NAMESPACE, "")
+            )
             continue
 
         if is_url_correct(item, n_urls):
@@ -65,21 +82,21 @@ def is_url_correct(url, n_url: int) -> bool:
     has_loc = False
 
     for prop in url:
-        tag_name = prop.tag.replace(XML_ETREE_NAMESPACE, '')
+        tag_name = prop.tag.replace(XML_ETREE_NAMESPACE, "")
 
-        if tag_name not in ['loc', 'lastmod', 'changefreq', 'priority']:
-            print('Error: invalid <%s> tag for URL n°%d!' % (tag_name, n_url))
+        if tag_name not in ["loc", "lastmod", "changefreq", "priority"]:
+            print("Error: invalid <%s> tag for URL n°%d!" % (tag_name, n_url))
 
             return False
 
-        if tag_name == 'loc':
+        if tag_name == "loc":
             has_loc = True
             loc = prop.text
             response = ping_url(loc)
             if response is not None:
                 valid = valid and is_indexable(loc, response)
 
-        if tag_name == 'priority':
+        if tag_name == "priority":
             try:
                 priority = float(prop.text)
 
@@ -87,17 +104,20 @@ def is_url_correct(url, n_url: int) -> bool:
                     raise ValueError()
 
             except ValueError:
-                print('Invalid value "%s" for <%s> tag, must be a number between 0 and 1' % (prop.text, tag_name))
+                print(
+                    'Invalid value "%s" for <%s> tag, must be a number between 0 and 1'
+                    % (prop.text, tag_name)
+                )
                 valid = False
 
-        if tag_name == 'changefreq' and prop.text not in VALID_CHANGE_FREQS:
-            print('Invalid vale for <%s> tag, must be one of the following values: %s' % (
-                tag_name,
-                ', '.join(VALID_CHANGE_FREQS)
-            ))
+        if tag_name == "changefreq" and prop.text not in VALID_CHANGE_FREQS:
+            print(
+                "Invalid vale for <%s> tag, must be one of the following values: %s"
+                % (tag_name, ", ".join(VALID_CHANGE_FREQS))
+            )
 
     if not has_loc:
-        print('Error: URL n°%d has no mandatory <loc> tag!' % n_url)
+        print("Error: URL n°%d has no mandatory <loc> tag!" % n_url)
         return False
 
     return valid
@@ -118,7 +138,10 @@ def ping_url(url: str, retries: int = 0) -> Union[None, requests.Response]:
             return None
 
         time_wait = 2 ** retries
-        print("Notice: network error while checking %s, waiting for %d seconds." % (url, time_wait))
+        print(
+            "Notice: network error while checking %s, waiting for %d seconds."
+            % (url, time_wait)
+        )
         time.sleep(time_wait)
 
         return ping_url(url, retries + 1)
@@ -129,7 +152,7 @@ def is_indexable(loc: str, response: requests.Response) -> bool:
         print('Location "%s" is not indexable based on X-Robots-Tag HTTP header' % loc)
         return False
 
-    html = BeautifulSoup(response.text, 'html.parser')
+    html = BeautifulSoup(response.text, "html.parser")
     head = html.head
 
     if head is None:
@@ -138,8 +161,13 @@ def is_indexable(loc: str, response: requests.Response) -> bool:
         return True
 
     for meta in head.find_all("meta"):
-        if meta.get("name") == "robots" and "noindex" in meta.get("content", "").split(","):
-            print('Location "%s" is not indexable based on <meta name="robots" /> HTML tag' % loc)
+        if meta.get("name") == "robots" and "noindex" in meta.get("content", "").split(
+            ","
+        ):
+            print(
+                'Location "%s" is not indexable based on <meta name="robots" /> HTML tag'
+                % loc
+            )
             return False
 
     return True
@@ -147,9 +175,7 @@ def is_indexable(loc: str, response: requests.Response) -> bool:
 
 if __name__ == "__main__":
     try:
-        args = ArgumentParser(
-            description="Validate a sitemap."
-        )
+        args = ArgumentParser(description="Validate a sitemap.")
 
         args.add_argument("sitemap_location", type=str, help="the URL to the sitemap")
 
