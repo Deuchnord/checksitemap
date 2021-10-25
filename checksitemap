@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-
+import time
 from argparse import ArgumentParser
+from typing import Union
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
@@ -13,7 +14,11 @@ VALID_CHANGE_FREQS = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'
 
 
 def main(url: str) -> int:
-    xml = requests.get(url)
+    try:
+        xml = requests.get(url)
+    except requests.ConnectionError:
+        print("The given URL was unreachable. Please double-check it.")
+        return 1
 
     if xml.headers['content-type'].split(';')[0] != 'text/xml':
         parsed = urlparse(url)
@@ -55,7 +60,7 @@ def check_sitemap(sitemap) -> (int, int):
     return n_urls, n_passed
 
 
-def is_url_correct(url, n_url) -> bool:
+def is_url_correct(url, n_url: int) -> bool:
     valid = True
     has_loc = False
 
@@ -70,12 +75,9 @@ def is_url_correct(url, n_url) -> bool:
         if tag_name == 'loc':
             has_loc = True
             loc = prop.text
-            r = requests.get(loc)
-            if r.status_code >= 300:
-                print('Location "%s" returned %d status code' % (loc, r.status_code))
-                valid = False
-
-            valid = valid and is_indexable(loc, r)
+            response = ping_url(loc)
+            if response is not None:
+                valid = valid and is_indexable(loc, response)
 
         if tag_name == 'priority':
             try:
@@ -99,6 +101,27 @@ def is_url_correct(url, n_url) -> bool:
         return False
 
     return valid
+
+
+def ping_url(url: str, retries: int = 0) -> Union[None, requests.Response]:
+    try:
+        r = requests.get(url)
+
+        if r.status_code >= 300:
+            print('Location "%s" returned %d status code' % (url, r.status_code))
+            return None
+
+        return r
+
+    except requests.exceptions.ChunkedEncodingError:
+        if retries == 5:
+            return None
+
+        time_wait = 2 ** retries
+        print("Notice: network error while checking %s, waiting for %d seconds." % (url, time_wait))
+        time.sleep(time_wait)
+
+        return ping_url(url, retries + 1)
 
 
 def is_indexable(loc: str, response: requests.Response) -> bool:
@@ -135,4 +158,3 @@ if __name__ == "__main__":
         exit(main(args.sitemap_location))
     except KeyboardInterrupt:
         exit(-1)
-
