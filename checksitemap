@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-import time
+
 from argparse import ArgumentParser
-from typing import Union
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
+import time
 import requests
 import xml.etree.ElementTree as ET
+import sys
+
+WARNING = "Warning"
+ERROR = "Error"
+NOTICE = "Notice"
 
 XML_NAMESPACE = "http://www.sitemaps.org/schemas/sitemap/0.9"
 XML_ETREE_NAMESPACE = "{%s}" % XML_NAMESPACE
@@ -21,22 +26,19 @@ VALID_CHANGE_FREQS = [
 ]
 
 
+def stderr(what: str, type_err: str = WARNING):
+    print("%s: %s" % (type_err, what), file=sys.stderr)
+
+
 def main(url: str) -> int:
     try:
-        xml = requests.get(url)
+        sitemap = get_sitemap(url)
     except requests.ConnectionError:
-        print("The given URL was unreachable. Please double-check it.")
+        stderr("The given URL was unreachable. Please double-check it.", ERROR)
         return 1
-
-    if xml.headers["content-type"].split(";")[0] != "text/xml":
-        parsed = urlparse(url)
-        url = "%s://%s/sitemap.xml" % (parsed.scheme, parsed.netloc)
-        xml = requests.get(url)
-        if xml.status_code == 200:
-            print("Sitemap found at %s" % url)
-
-    xml.raise_for_status()
-    sitemap = ET.fromstring(xml.text)
+    except requests.exceptions.HTTPError:
+        stderr("could not find the sitemap.", ERROR)
+        return 1
 
     n_urls, n_passed = check_sitemap(sitemap)
 
@@ -51,13 +53,26 @@ def main(url: str) -> int:
     return 0 if n_passed == n_urls else 1
 
 
+def get_sitemap(url: str) -> ET:
+    response = requests.get(url, allow_redirects=False)
+
+    if response.headers["content-type"].split(";")[0] != "text/xml":
+        parsed = urlparse(url)
+        url = "%s://%s/sitemap.xml" % (parsed.scheme, parsed.netloc)
+        response = requests.get(url)
+
+    response.raise_for_status()
+
+    return ET.fromstring(response.text)
+
+
 def check_sitemap(sitemap) -> (int, int):
     n_urls = 0
     n_passed = 0
 
     if not sitemap.tag.startswith(XML_ETREE_NAMESPACE):
-        print(
-            'Warning: missing XML namespace on <urlset> tag: please add xmlns="%s"'
+        stderr(
+            'missing XML namespace on <urlset> tag: please add xmlns="%s"'
             % XML_NAMESPACE
         )
 
@@ -65,9 +80,10 @@ def check_sitemap(sitemap) -> (int, int):
         n_urls += 1
 
         if item.tag.replace(XML_ETREE_NAMESPACE, "") != "url":
-            print(
-                "Error: invalid tag <%s>, expected <url>"
-                % item.tag.replace(XML_ETREE_NAMESPACE, "")
+            stderr(
+                "invalid tag <%s>, expected <url>"
+                % item.tag.replace(XML_ETREE_NAMESPACE, ""),
+                ERROR,
             )
             continue
 
@@ -85,71 +101,74 @@ def is_url_correct(url, n_url: int) -> bool:
         tag_name = prop.tag.replace(XML_ETREE_NAMESPACE, "")
 
         if tag_name not in ["loc", "lastmod", "changefreq", "priority"]:
-            print("Error: invalid <%s> tag for URL n°%d!" % (tag_name, n_url))
+            stderr("invalid <%s> tag for URL n°%d!" % (tag_name, n_url), ERROR)
 
             return False
 
         if tag_name == "loc":
             has_loc = True
             loc = prop.text
-            response = ping_url(loc)
-            if response is not None:
-                valid = valid and is_indexable(loc, response)
+            response, is_loc_valid = is_url_working(loc)
+            valid = valid and is_loc_valid and is_indexable(response)
 
         if tag_name == "priority":
-            try:
-                priority = float(prop.text)
+            priority = float(prop.text)
 
-                if not 0 <= priority <= 1:
-                    raise ValueError()
-
-            except ValueError:
-                print(
-                    'Invalid value "%s" for <%s> tag, must be a number between 0 and 1'
-                    % (prop.text, tag_name)
+            if not 0 <= priority <= 1:
+                stderr(
+                    'invalid value "%s" for <%s> tag, must be a number between 0 and 1'
+                    % (prop.text, tag_name),
                 )
                 valid = False
 
         if tag_name == "changefreq" and prop.text not in VALID_CHANGE_FREQS:
-            print(
-                "Invalid vale for <%s> tag, must be one of the following values: %s"
+            stderr(
+                "invalid vale for <%s> tag, must be one of the following values: %s"
                 % (tag_name, ", ".join(VALID_CHANGE_FREQS))
             )
+            valid = False
 
     if not has_loc:
-        print("Error: URL n°%d has no mandatory <loc> tag!" % n_url)
+        stderr("error: URL n°%d has no mandatory <loc> tag!" % n_url, ERROR)
         return False
 
     return valid
 
 
-def ping_url(url: str, retries: int = 0) -> Union[None, requests.Response]:
+def is_url_working(url: str, retries: int = 0) -> (requests.Response, bool):
+    r = requests.get(url, allow_redirects=False)
+
     try:
-        r = requests.get(url)
-
+        r.raise_for_status()
         if r.status_code >= 300:
-            print('Location "%s" returned %d status code' % (url, r.status_code))
-            return None
+            stderr('location "%s" redirects to "%s" with %d status code. You may want to remove it from your sitemap.' % (url, r.headers.get('Location'), r.status_code), NOTICE)
 
-        return r
+    except requests.HTTPError as e:
+        stderr('location "%s" returns an HTTP %d status code.' % (url, e.response.status_code), ERROR)
+        return r, False
 
     except requests.exceptions.ChunkedEncodingError:
         if retries == 5:
-            return None
+            stderr('could not reach "%s" because of a network error.', ERROR)
+            return r, False
 
         time_wait = 2 ** retries
-        print(
-            "Notice: network error while checking %s, waiting for %d seconds."
-            % (url, time_wait)
-        )
+        stderr(
+            "network error while checking %s, waiting for %d seconds."
+            % (url, time_wait),
+            )
         time.sleep(time_wait)
 
-        return ping_url(url, retries + 1)
+        return is_url_working(url, retries + 1)
+
+    return r, True
 
 
-def is_indexable(loc: str, response: requests.Response) -> bool:
+def is_indexable(response: requests.Response) -> bool:
+    url = response.url
+    
     if "noindex" in response.headers.get("X-Robots-Tag", "").split(" "):
-        print('Location "%s" is not indexable based on X-Robots-Tag HTTP header' % loc)
+        stderr('location "%s" is not indexable based on X-Robots-Tag HTTP header' % url)
         return False
 
     html = BeautifulSoup(response.text, "html.parser")
@@ -164,9 +183,9 @@ def is_indexable(loc: str, response: requests.Response) -> bool:
         if meta.get("name") == "robots" and "noindex" in meta.get("content", "").split(
             ","
         ):
-            print(
-                'Location "%s" is not indexable based on <meta name="robots" /> HTML tag'
-                % loc
+            stderr(
+                'location "%s" is not indexable based on <meta name="robots" /> HTML tag'
+                % url
             )
             return False
 
