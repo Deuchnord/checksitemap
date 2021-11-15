@@ -1,4 +1,3 @@
-from pathlib import Path
 from distutils.core import setup
 
 with open("README.md", "r") as f:
@@ -6,8 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="checksitemap",
-    version="v1.0.2",
-    packages=[""],
+    version="1.0.2",
     scripts=["checksitemap"],
     url="https://github.com/Deuchnord/checksitemap",
     license="AGPL-3.0",

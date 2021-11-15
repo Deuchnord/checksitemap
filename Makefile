@@ -1,2 +1,2 @@
 black:
-	pipenv run black checksitemap setup.py
+	pipenv run black checksitemap tests.py setup.py

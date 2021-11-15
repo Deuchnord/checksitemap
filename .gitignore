@@ -1,3 +1,5 @@
 /dist
 /checksitemap.egg-info/
 /MANIFEST
+.coverage
+__pycache__
