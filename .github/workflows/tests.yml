@@ -31,16 +31,16 @@ jobs:
           pipenv sync --dev
           pipenv install --dev
 
-#      - name: Run Tests (with coverage)
-#        env:
-#          #COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        if: ${{ matrix.python_version == '3.10' }}
-#        run: |
-#          pipenv run python3 -m coverage run $(which pytest) tests.py
-#          pipenv run coveralls --service=github
+      - name: Run Tests (with coverage)
+        env:
+#          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: ${{ matrix.python_version == '3.10' }}
+        run: |
+          pipenv run python3 -m coverage run $(which pytest) tests.py
+          pipenv run coveralls --service=github
 
-      - name: "Run Tests" # (without coverage)
-#        if: ${{ matrix.python_version != '3.10' }}
+      - name: Run Tests (without coverage)
+        if: ${{ matrix.python_version != '3.10' }}
         run: |
           pipenv run pytest tests.py

@@ -1,0 +1,6 @@
+[run]
+branch = true
+source =
+    checksitemap
+omit =
+    tests.py
