@@ -41,9 +41,9 @@ def main(url: str) -> int:
         stderr("could not find the sitemap.", ERROR)
         return 1
 
-    n_urls, n_passed = check_sitemap(sitemap)
+    sitemap_valid, n_urls, n_passed = check_sitemap(sitemap)
 
-    if n_passed != n_urls:
+    if not sitemap_valid:
         print()
 
     print(
@@ -51,7 +51,7 @@ def main(url: str) -> int:
         % (n_passed, n_urls, int(n_passed / n_urls * 100))
     )
 
-    return 0 if n_passed == n_urls else 1
+    return 0 if sitemap_valid else 1
 
 
 def get_sitemap(place: str) -> ET:
@@ -88,7 +88,8 @@ def get_sitemap(place: str) -> ET:
     return ET.fromstring(xml)
 
 
-def check_sitemap(sitemap) -> (int, int):
+def check_sitemap(sitemap) -> (bool, int, int):
+    sitemap_valid = True
     n_urls = 0
     n_passed = 0
 
@@ -97,6 +98,7 @@ def check_sitemap(sitemap) -> (int, int):
             'missing XML namespace on <urlset> tag: please add xmlns="%s"'
             % XML_NAMESPACE
         )
+        sitemap_valid = False
 
     for item in sitemap:
         n_urls += 1
@@ -111,8 +113,10 @@ def check_sitemap(sitemap) -> (int, int):
 
         if is_url_correct(item, n_urls):
             n_passed += 1
+        elif sitemap_valid:
+            sitemap_valid = False
 
-    return n_urls, n_passed
+    return sitemap_valid, n_urls, n_passed
 
 
 def is_url_correct(url, n_url: int) -> bool:
@@ -145,13 +149,13 @@ def is_url_correct(url, n_url: int) -> bool:
 
         if tag_name == "changefreq" and prop.text not in VALID_CHANGE_FREQS:
             stderr(
-                "invalid vale for <%s> tag, must be one of the following values: %s"
+                "invalid value for <%s> tag, must be one of the following values: %s"
                 % (tag_name, ", ".join(VALID_CHANGE_FREQS))
             )
             valid = False
 
     if not has_loc:
-        stderr("error: URL n°%d has no mandatory <loc> tag!" % n_url, ERROR)
+        stderr("URL n°%d has no mandatory <loc> tag!" % n_url, ERROR)
         return False
 
     return valid

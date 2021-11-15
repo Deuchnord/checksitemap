@@ -1,0 +1,46 @@
+name: Command Line Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  tests:
+    name: Python ${{ matrix.python_version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version:
+          - "3.9"
+          - "3.10"
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python_version }}
+          architecture: x64
+
+      - name: Install dependencies
+        run: |
+          pip install -U pip pipenv
+          pipenv sync --dev
+          pipenv install --dev
+
+#      - name: Run Tests (with coverage)
+#        env:
+#          #COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        if: ${{ matrix.python_version == '3.10' }}
+#        run: |
+#          pipenv run python3 -m coverage run $(which pytest) tests.py
+#          pipenv run coveralls --service=github
+
+      - name: "Run Tests" # (without coverage)
+#        if: ${{ matrix.python_version != '3.10' }}
+        run: |
+          pipenv run pytest tests.py

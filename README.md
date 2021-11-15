@@ -1,5 +1,7 @@
 # checksitemap -- A tool to verify your sitemaps
 
+[![Coverage Status](https://coveralls.io/repos/github/Deuchnord/checksitemap/badge.svg?branch=main)](https://coveralls.io/github/Deuchnord/Aurornis?branch=main)
+
 checksitemap is a very simple tool that allows you to check the sitemaps of your websites.
 Its development is not complete, but it is still currently usable.
 
@@ -11,10 +13,16 @@ First, install Python 3 and the `checksitemap` package from PyPI:
 pip install checksitemap
 ```
 
-You can now use tool, by invoking the command:
+You can now use invoke the command:
 
 ```bash
 checksitemap "https://example.com/sitemap.xml"
+```
+
+If you prefer, you can also use `checksitemap` on a local file:
+
+```bash
+checksitemap path/to/local/file.xml
 ```
 
 It will then check all the URLs in your sitemap and show errors if:
