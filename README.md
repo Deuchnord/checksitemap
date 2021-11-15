@@ -1,7 +1,5 @@
 # checksitemap -- A tool to verify your sitemaps
 
-[![Coverage Status](https://coveralls.io/repos/github/Deuchnord/checksitemap/badge.svg?branch=main)](https://coveralls.io/github/Deuchnord/Aurornis?branch=main)
-
 checksitemap is a very simple tool that allows you to check the sitemaps of your websites.
 Its development is not complete, but it is still currently usable.
 
