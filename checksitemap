@@ -8,6 +8,7 @@ import time
 import requests
 import xml.etree.ElementTree as ET
 import sys
+import re
 
 WARNING = "Warning"
 ERROR = "Error"
@@ -53,17 +54,38 @@ def main(url: str) -> int:
     return 0 if n_passed == n_urls else 1
 
 
-def get_sitemap(url: str) -> ET:
-    response = requests.get(url, allow_redirects=False)
+def get_sitemap(place: str) -> ET:
+    web_protocol = re.match(r"^https?://", place)
 
-    if response.headers["content-type"].split(";")[0] != "text/xml":
-        parsed = urlparse(url)
-        url = "%s://%s/sitemap.xml" % (parsed.scheme, parsed.netloc)
-        response = requests.get(url)
+    if web_protocol:
+        response = None
+        if web_protocol[0] == "http://":
+            try:
+                response = requests.get(
+                    place.replace("http://", "https://"), allow_redirects=False
+                )
+                stderr("upgraded to HTTPS automatically.", NOTICE)
+            except requests.exceptions.SSLError:
+                stderr(
+                    "website not secure with TLS. You should consider upgrading to improve the security of your "
+                    "visitors."
+                )
+        if response is None:
+            response = requests.get(place, allow_redirects=False)
 
-    response.raise_for_status()
+        if response.headers["content-type"].split(";")[0] != "text/xml":
+            parsed = urlparse(place)
+            place = "%s://%s/sitemap.xml" % (parsed.scheme, parsed.netloc)
+            response = requests.get(place)
 
-    return ET.fromstring(response.text)
+        response.raise_for_status()
+        xml = response.text
+    else:
+        # User provided a file, let's open it directly.
+        with open(place) as file:
+            xml = file.read()
+
+    return ET.fromstring(xml)
 
 
 def check_sitemap(sitemap) -> (int, int):
@@ -141,10 +163,18 @@ def is_url_working(url: str, retries: int = 0) -> (requests.Response, bool):
     try:
         r.raise_for_status()
         if r.status_code >= 300:
-            stderr('location "%s" redirects to "%s" with %d status code. You may want to remove it from your sitemap.' % (url, r.headers.get('Location'), r.status_code), NOTICE)
+            stderr(
+                'location "%s" redirects to "%s" with %d status code. You may want to remove it from your sitemap.'
+                % (url, r.headers.get("Location"), r.status_code),
+                NOTICE,
+            )
 
     except requests.HTTPError as e:
-        stderr('location "%s" returns an HTTP %d status code.' % (url, e.response.status_code), ERROR)
+        stderr(
+            'location "%s" returns an HTTP %d status code.'
+            % (url, e.response.status_code),
+            ERROR,
+        )
         return r, False
 
     except requests.exceptions.ChunkedEncodingError:
@@ -156,7 +186,7 @@ def is_url_working(url: str, retries: int = 0) -> (requests.Response, bool):
         stderr(
             "network error while checking %s, waiting for %d seconds."
             % (url, time_wait),
-            )
+        )
         time.sleep(time_wait)
 
         return is_url_working(url, retries + 1)
@@ -166,7 +196,7 @@ def is_url_working(url: str, retries: int = 0) -> (requests.Response, bool):
 
 def is_indexable(response: requests.Response) -> bool:
     url = response.url
-    
+
     if "noindex" in response.headers.get("X-Robots-Tag", "").split(" "):
         stderr('location "%s" is not indexable based on X-Robots-Tag HTTP header' % url)
         return False
