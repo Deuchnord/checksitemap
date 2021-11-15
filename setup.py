@@ -5,7 +5,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="checksitemap",
-    version="1.0.2",
+    version="1.1.0",
     scripts=["checksitemap"],
     url="https://github.com/Deuchnord/checksitemap",
     license="AGPL-3.0",
