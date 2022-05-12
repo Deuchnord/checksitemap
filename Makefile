@@ -1,2 +1,5 @@
 black:
-	pipenv run black checksitemap tests.py setup.py
+	poetry run black checksitemap tests.py
+
+tests:
+	poetry run pytest tests.py

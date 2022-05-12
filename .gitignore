@@ -1,4 +1,5 @@
 /dist
 /checksitemap.egg-info/
 /MANIFEST
-/__pycache__
+/__pycache__/*
+/checksitemap/__pycache__
