@@ -31,29 +31,6 @@ def stderr(what: str, type_err: str = WARNING):
     print("%s: %s" % (type_err, what), file=sys.stderr)
 
 
-def main(url: str) -> int:
-    try:
-        sitemap = get_sitemap(url)
-    except requests.ConnectionError:
-        stderr("The given URL was unreachable. Please double-check it.", ERROR)
-        return 1
-    except requests.exceptions.HTTPError:
-        stderr("could not find the sitemap.", ERROR)
-        return 1
-
-    sitemap_valid, n_urls, n_passed = check_sitemap(sitemap)
-
-    if not sitemap_valid:
-        print()
-
-    print(
-        "%d of %d URLs (%d%%) passed."
-        % (n_passed, n_urls, int(n_passed / n_urls * 100))
-    )
-
-    return 0 if sitemap_valid else 1
-
-
 def get_sitemap(place: str) -> ET:
     web_protocol = re.match(r"^https?://", place)
 
@@ -186,7 +163,7 @@ def is_url_working(url: str, retries: int = 0) -> (requests.Response, bool):
             stderr('could not reach "%s" because of a network error.', ERROR)
             return r, False
 
-        time_wait = 2 ** retries
+        time_wait = 2**retries
         stderr(
             "network error while checking %s, waiting for %d seconds."
             % (url, time_wait),
@@ -224,16 +201,3 @@ def is_indexable(response: requests.Response) -> bool:
             return False
 
     return True
-
-
-if __name__ == "__main__":
-    try:
-        args = ArgumentParser(description="Validate a sitemap.")
-
-        args.add_argument("sitemap_location", type=str, help="the URL to the sitemap")
-
-        args = args.parse_args()
-
-        exit(main(args.sitemap_location))
-    except KeyboardInterrupt:
-        exit(-1)

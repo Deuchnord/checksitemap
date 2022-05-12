@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
 from aurornis import run
-from os import environ
 
 
 def run_cmd(xml: str):
-    return run(["./checksitemap", xml], environment={"PATH": environ.get("PATH")})
+    return run(["checksitemap", xml])
 
 
 def test_check_valid_sitemap_from_local_file():

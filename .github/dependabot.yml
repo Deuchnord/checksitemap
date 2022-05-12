@@ -1,14 +1,21 @@
 version: 2
 
 updates:
-- package-ecosystem: pip
-  directory: "/"
-  schedule:
-    interval: daily
-  open-pull-requests-limit: 10
-  target-branch: main
-  reviewers:
-    - Deuchnord
-  commit-message:
-    prefix: chore
-    include: scope
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    target-branch: main
+    reviewers:
+      - Deuchnord
+    commit-message:
+      prefix: chore
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    open-pull-requests-limit: 5
+    target-branch: main
+    schedule:
+      interval: weekly
