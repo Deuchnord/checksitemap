@@ -19,7 +19,7 @@ def test_check_invalid_sitemap_from_local_file_missing_namespace():
     assert not result.is_successful()
     assert (
         result.stderr == "Warning: missing XML namespace on <urlset> tag: "
-        'please add xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n'
+        'add the xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" attribute.\n'
     )
     assert result.stdout == "\n3 of 3 URLs (100%) passed.\n"
 
@@ -67,3 +67,12 @@ def test_check_sitemap_containing_404_error_from_local_file():
         == 'Error: location "https://deuchnord.fr/blog/foo" returns an HTTP 404 status code.\n'
     )
     assert result.stdout == "\n3 of 4 URLs (75%) passed.\n"
+
+
+def test_check_sitemap_on_non_existing_site():
+    result = run_cmd("https://thissitedoesnotexist.dns")
+    assert not result.is_successful()
+    assert (
+        result.stderr
+        == "Error: resource not found at https://thissitedoesnotexist.dns.\n"
+    )
