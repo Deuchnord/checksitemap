@@ -3,8 +3,8 @@
 from aurornis import run
 
 
-def run_cmd(xml: str):
-    return run(["checksitemap", xml])
+def run_cmd(path: str):
+    return run(["python3", "-m", "checksitemap", path], normalize_carriage_return=True)
 
 
 def test_check_valid_sitemap_from_local_file():
@@ -15,7 +15,7 @@ def test_check_valid_sitemap_from_local_file():
 
 
 def test_check_invalid_sitemap_from_local_file_missing_namespace():
-    result = run_cmd(f"test_assets/invalid_sitemap_missing_namespace.xml")
+    result = run_cmd("test_assets/invalid_sitemap_missing_namespace.xml")
     assert not result.is_successful()
     assert (
         result.stderr == "Warning: missing XML namespace on <urlset> tag: "
@@ -25,21 +25,21 @@ def test_check_invalid_sitemap_from_local_file_missing_namespace():
 
 
 def test_check_invalid_sitemap_from_local_file_invalid_tag():
-    result = run_cmd(f"test_assets/invalid_sitemap_invalid_tag.xml")
+    result = run_cmd("test_assets/invalid_sitemap_invalid_tag.xml")
     assert not result.is_successful()
     assert result.stderr == "Error: invalid <is_a_cool_page> tag for URL n°1!\n"
     assert result.stdout == "\n2 of 3 URLs (66%) passed.\n"
 
 
 def test_check_invalid_sitemap_from_local_file_missing_loc():
-    result = run_cmd(f"test_assets/invalid_sitemap_missing_loc.xml")
+    result = run_cmd("test_assets/invalid_sitemap_missing_loc.xml")
     assert not result.is_successful()
     assert result.stderr == "Error: URL n°1 has no mandatory <loc> tag!\n"
     assert result.stdout == "\n2 of 3 URLs (66%) passed.\n"
 
 
 def test_check_invalid_sitemap_from_local_file_invalid_priority():
-    result = run_cmd(f"test_assets/invalid_sitemap_invalid_priority.xml")
+    result = run_cmd("test_assets/invalid_sitemap_invalid_priority.xml")
     assert not result.is_successful()
     assert (
         result.stderr
@@ -49,7 +49,7 @@ def test_check_invalid_sitemap_from_local_file_invalid_priority():
 
 
 def test_check_invalid_sitemap_from_local_file_changefreq():
-    result = run_cmd(f"test_assets/invalid_sitemap_changefreq.xml")
+    result = run_cmd("test_assets/invalid_sitemap_changefreq.xml")
     assert not result.is_successful()
     assert (
         result.stderr
