@@ -24,7 +24,7 @@ beautifulsoup4 = "^4.12"
 
 [tool.poetry.dev-dependencies]
 black = "^23.3"
-aurornis = "^1.5"
+aurornis = "^1.6"
 pytest = "^7.4"
 
 [build-system]
