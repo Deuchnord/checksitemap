@@ -2,14 +2,14 @@
 
 [[package]]
 name = "aurornis"
-version = "1.5.0"
+version = "1.6.0"
 description = "A command line program test helper"
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = "<4.0,>=3.7"
 groups = ["dev"]
 files = [
-    {file = "aurornis-1.5.0-py3-none-any.whl", hash = "sha256:565376bc5cec9f7f6797accc24e614fb43fc2bfb18d0b5576f2102a7c3be790d"},
-    {file = "aurornis-1.5.0.tar.gz", hash = "sha256:2cf67b43d480caeee60bbb99ba3d3139db47386347dace5dc77d7e3885e3993f"},
+    {file = "aurornis-1.6.0-py3-none-any.whl", hash = "sha256:457ff4b8b3b0f1f16b434071c267a706bb96a23e5ada37f611f3a6520536e5ea"},
+    {file = "aurornis-1.6.0.tar.gz", hash = "sha256:3b86689370fdf17f63f32db56795234923a031c783cf7a47b0578093cc26b5ee"},
 ]
 
 [package.dependencies]
@@ -449,4 +449,4 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.7"
-content-hash = "0eaeb2a3544fc57b31c22e7716e37b2263c1c0bc046647dff57dd721353a2c94"
+content-hash = "508b1af363f89ee97cb2622c9e475c5a7f72240c686b73726a1c27981d34d011"
