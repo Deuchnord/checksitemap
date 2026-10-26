@@ -20,7 +20,7 @@ checksitemap = "checksitemap.__main__:main"
 [tool.poetry.dependencies]
 python = "^3.7"
 requests = "^2.31"
-beautifulsoup4 = "^4.12"
+beautifulsoup4 = "^4.15"
 
 [tool.poetry.dev-dependencies]
 black = "^23.3"
